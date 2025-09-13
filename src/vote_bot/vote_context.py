@@ -1,7 +1,7 @@
 class VoteContext:
-    def __init__(self, name = None, peoplePool = None, parentContext = None):
+    def __init__(self, name, peoplePool = None, parentContext = None):
         assert (peoplePool is None) != (parentContext is None)
-        assert (name is None) == (parentContext is None)
+        assert not "." in (name or "")
         self.peoplePool = parentContext.peoplePool if parentContext else peoplePool
         self.parentContext = parentContext
         self.name = name
@@ -57,3 +57,18 @@ class VoteContext:
         self.polls[pollName] = poll
         poll.setVoteContext(self)
         poll._updateVotes()
+        self.peoplePool.triggerAddPollCallbacks(poll)
+    def findContextByParts(self, parts):
+        if len(parts) == 0:
+            return self
+        return self.subContext(parts[0]).findContextByParts(parts[1:])
+    def getPath(self):
+        if self.parentContext:
+            return self.parentContext.getPath() + "." + self.name
+        else:
+            return self.name
+    def _updateAllPolls(self):
+        for poll in self.polls.values():
+            poll._updateVotes()
+        for subContext in self.subContexts.values():
+            subContext._updateAllPolls()

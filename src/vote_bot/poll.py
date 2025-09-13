@@ -19,6 +19,12 @@ class Poll:
         self.directVotes[option].add(voter)
         self._updateVotes()
         return True
+    
+    def _unvote(self, voter):
+        for opt, voters in self.directVotes.items():
+            voters.discard(voter)
+        self._updateVotes()
+        return True
 
     def setVoteContext(self, voteContext):
         self.voteContext = voteContext

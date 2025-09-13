@@ -1,16 +1,18 @@
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
-from vote_bot import getPerson, PeoplePool, VoteContext, Poll, Scenario
+from vote_bot import getPerson, PeoplePool, VoteContext, Poll, Scenario, SQLiteActionLogger
 from pathlib import Path
 
 tom = getPerson("Tom")
 paul = getPerson("Paul")
 fred = getPerson("Fred")
 
-pool = PeoplePool([tom, paul, fred])
+#actionLogger = SQLiteActionLogger(Path(__file__).parent / "testVoteBot.sqlite")
 
-rootContext = VoteContext(peoplePool=pool)
+pool = PeoplePool([tom, paul, fred])#, actionLogger=actionLogger, loadOldActions=False)
+
+rootContext = VoteContext(peoplePool=pool, name="root")
 finances = rootContext.subContext("finances")
 administration = rootContext.subContext("administration")
 publicRelations = rootContext.subContext("publicRelations")
@@ -41,11 +43,11 @@ assert not paul.voteForPerson(tom, infrastructure)
 print("Paul votes for Fred as his representative in the infrastructure context")
 assert paul.voteForPerson(fred, infrastructure)
 print("Paul votes for the scenario 'Develop a prototype first'")
-assert paul.voteForScenario(developPrototypeFirst)
+assert paul.voteForPoll(developPrototypeFirst)
 print("Fred votes for the scenario 'Start directly with the main software'")
-assert fred.voteForScenario(startDirectlyWithMainSoftware)
+assert fred.voteForPoll(startDirectlyWithMainSoftware)
 print("Tom removes his vote for Fred as his representative in the software context. Now, Tom's representative in the software context is Paul, as Paul is Tom's representative in the root context and no other representative was actively chosen in the software context.")
-assert tom.unvoteForPerson(fred, software)
+assert tom.unvoteForPerson(software)
 
 
 
