@@ -51,13 +51,23 @@ class VoteContext:
         if not name in self.subContexts:
             self.subContexts[name] = VoteContext(name=name, parentContext=self)
         return self.subContexts[name]
-    def addPoll(self, poll):
+    def addPoll(self, poll, timestamp=None):
+        timestamp = self.peoplePool.timeEvents.getRightTimeOrderTimestamp(timestamp, timestamp)
         pollName = poll.short
         assert not pollName in self.polls
         self.polls[pollName] = poll
         poll.setVoteContext(self)
         poll._updateVotes()
+        self.peoplePool._logAction(timestamp, "addPollToContext", poll, self)
         self.peoplePool.triggerAddPollCallbacks(poll)
+    def removePoll(self, poll, timestamp=None):
+        timestamp = self.peoplePool.timeEvents.getRightTimeOrderTimestamp(timestamp, timestamp)
+        pollName = poll.short
+        assert pollName in self.polls and self.polls[pollName] == poll
+        poll._stopPoll()
+        del self.polls[pollName]
+        self.peoplePool._logAction(timestamp, "removePollFromContext", poll, self)
+        self.peoplePool.triggerRemovePollCallbacks(poll)
     def findContextByParts(self, parts):
         if len(parts) == 0:
             return self

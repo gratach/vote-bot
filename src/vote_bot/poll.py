@@ -1,18 +1,22 @@
 class Poll:
     def __init__(self, question, options, short):
         self.question = question
-        self.options = options
+        self.options = {option.short: option for option in options}
         self.short = short
         self.directVotes = {option: set() for option in options}
         self.directedVotes = {option: set() for option in options}
         self.validVotes = {option: set() for option in options}
         self.votesUpdateCallbacks = set()
         self.voteContext = None
+        self.pollEnded = False
+        self.pollStarted = False
+        self.pollSuccessCallbacks = set()
         for option in options:
             option.poll = self
 
+
     def _vote(self, voter, option):
-        if not option in self.options:
+        if not option in self.options.values() or self.pollEnded:
             return False
         for opt, voters in self.directVotes.items():
             voters.discard(voter)
@@ -28,6 +32,7 @@ class Poll:
 
     def setVoteContext(self, voteContext):
         self.voteContext = voteContext
+        self.pollStarted = True
 
     def addVotesUpdateCallback(self, callback):
         self.votesUpdateCallbacks.add(callback)
@@ -37,6 +42,8 @@ class Poll:
         self.votesUpdateCallbacks.discard(callback)
 
     def _updateVotes(self):
+        if not self.pollStarted or self.pollEnded or self.voteContext is None:
+            return
         oldDirectedVotes = self.directedVotes
         oldValidVotes = self.validVotes
         # Set the directed votes according to the current representatives
@@ -49,7 +56,7 @@ class Poll:
             if voter not in personsPerVoter:
                 personsPerVoter[voter] = set()
             personsPerVoter[voter].add(person)
-        self.directedVotes = {option: set() for option in self.options}
+        self.directedVotes = {option: set() for option in self.options.values()}
         for option, voters in self.directVotes.items():
             for voter in voters:
                 if voter in personsPerVoter:
@@ -60,3 +67,21 @@ class Poll:
         if oldDirectedVotes != self.directedVotes or oldValidVotes != self.validVotes:
             for callback in self.votesUpdateCallbacks:
                 callback(self)
+    
+    def _endPoll(self):
+        pass
+
+    def _pollSuccess(self):
+        self.pollEnded = True
+        for callback in self.pollSuccessCallbacks:
+            callback(self)
+        self._endPoll()
+
+    def addPollSuccessCallback(self, callback):
+        self.pollSuccessCallbacks.add(callback)
+
+    def removePollSuccessCallback(self, callback):
+        self.pollSuccessCallbacks.discard(callback)
+
+    def getDescription(self):
+        raise Exception("Not implemented")

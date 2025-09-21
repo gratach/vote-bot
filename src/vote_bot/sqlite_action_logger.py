@@ -19,10 +19,14 @@ class SQLiteActionLogger:
             )
         """)
         self.conn.commit()
+        self.lastTimestamp = None
 
     def logAction(self, actionDict, timestamp=None):
         if timestamp is None:
             timestamp = time.time()
+        if self.lastTimestamp is not None and timestamp <= self.lastTimestamp:
+            raise Exception("Timestamps must be non-decreasing.")
+        self.lastTimestamp = timestamp
         actionJson = json.dumps(actionDict)
         self.cursor.execute("""
             INSERT INTO actions (timestamp, action) VALUES (?, ?)
