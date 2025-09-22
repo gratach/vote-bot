@@ -25,7 +25,7 @@ class Person:
         timestamp = voteContext.peoplePool.timeEvents.getRightTimeOrderTimestamp(timestamp, timestamp)
         # Check if any recursion wold occur, voting for oneself is always allowed
         parentRepresentative = voteContext.parentContext.representativePerPerson[self] if voteContext.parentContext else self
-        if voteContext.parentContext._checkIfAnyChildDelegatesTo(parentRepresentative, self):
+        if not parentRepresentative == self and voteContext._checkIfAnyChildDelegatesTo(parentRepresentative, self):
             return False
         voteContext._activelyUnsetRepresentative(self)
         voteContext.peoplePool._logAction(timestamp, "unvoteForPerson", self, voteContext)

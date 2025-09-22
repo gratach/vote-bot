@@ -25,7 +25,7 @@ class VoteContext:
             return True
         lastPersonInChain = person
         while self.representativePerPerson.get(lastPersonInChain, lastPersonInChain) != lastPersonInChain:
-            lastPersonInChain = self.representativePerPerson[lastPersonInChain]
+            lastPersonInChain = self.representativePerPerson.get(lastPersonInChain, lastPersonInChain)
             if lastPersonInChain == delegate:
                 return True
         for subContext in self.subContexts.values():
@@ -50,6 +50,8 @@ class VoteContext:
     def subContext(self, name):
         if not name in self.subContexts:
             self.subContexts[name] = VoteContext(name=name, parentContext=self)
+            for person, representative in self.representativePerPerson.items():
+                self.subContexts[name]._setRepresentative(person, representative)
         return self.subContexts[name]
     def addPoll(self, poll, timestamp=None):
         timestamp = self.peoplePool.timeEvents.getRightTimeOrderTimestamp(timestamp, timestamp)
@@ -68,6 +70,15 @@ class VoteContext:
         del self.polls[pollName]
         self.peoplePool._logAction(timestamp, "removePollFromContext", poll, self)
         self.peoplePool.triggerRemovePollCallbacks(poll)
+    def getRepresentationTree(self, offset = 0):
+        lines = []
+        lines.append(" " * offset + self.getPath() + ":")
+        for person, representative in self.representativePerPerson.items():
+            activeMark = "*" if person in self.activelyChoosenRepresentativePerPerson else ""
+            lines.append(" " * (offset + 2) + f"{person.id} -> {representative.id}{activeMark}")
+        for subContext in self.subContexts.values():
+            lines.append(subContext.getRepresentationTree(offset + 2))
+        return "\n".join(lines)
     def findContextByParts(self, parts):
         if len(parts) == 0:
             return self
