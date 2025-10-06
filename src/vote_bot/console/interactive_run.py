@@ -14,7 +14,7 @@ async def asyncInput(prompt: str = "") -> str:
 
 async def interactiveRun(pool, votebot = None):
     while True:
-        command = await asyncInput("Enter command (or 'exit' to quit): ")
+        command = await asyncInput("Enter command: ")
         command = command.strip().lower()
         if command == "exit":
             print("Exiting...")
@@ -116,3 +116,5 @@ async def interactiveRun(pool, votebot = None):
                 print(f"{personId} removed their representative vote in context {contextPath}")
             else:
                 print(f"Failed to remove representative vote in context {contextPath}")
+        else:
+            print("Unknown command. Type 'help' for a list of commands.")
