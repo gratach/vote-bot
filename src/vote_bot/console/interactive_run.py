@@ -1,46 +1,26 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-from vote_bot import getPerson, PeoplePool, VoteContext, Poll, PollOption, SQLiteActionLogger, DeadlinePoll
-from vote_bot import PeoplePool, SQLiteActionLogger
-from pathlib import Path
 import asyncio
+from ..vote_logic.person import getPerson
+from ..vote_logic.pollOption import PollOption
+from ..vote_logic.poll import Poll
+from ..vote_logic.deadline_poll import DeadlinePoll
+from ..vote_logic.people_pool import PeoplePool
+from ..vote_logic.sqlite_action_logger import SQLiteActionLogger
+from ..vote_logic.vote_context import VoteContext
+from pathlib import Path
 
 async def asyncInput(prompt: str = "") -> str:
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, lambda: input(prompt))
 
-async def run():
-
-    actionLogger = SQLiteActionLogger(Path(__file__).parent / "testVoteBot.sqlite")
-
-    def votesUpdate(poll):
-        print(f"{poll.short} votes update")
-        for scenario, voters in poll.validVotes.items():
-            print(f"  {scenario.short}: {[voter.id for voter in voters]}")
-
-    def addPollCallback(poll):
-        print(f"New poll added: {poll.short} in context {poll.voteContext.getPath()}")
-        poll.addVotesUpdateCallback(votesUpdate)
-        poll.pollSuccessCallbacks.add(pollSuccess)
-
-    def pollSuccess(poll):
-        print(f"Poll {poll.short} ended successfully. Final votes:")
-        for scenario, voters in poll.validVotes.items():
-            print(f"  {scenario.short}: {len(voters)} votes ({[voter.id for voter in voters]})")
-
-    pool = PeoplePool(actionLogger=actionLogger, addPollCallbacks=[addPollCallback])
-
-    # run timevents and interactiveRun concurrently
-    await asyncio.gather(pool.runTimeEvents(), interactiveRun(pool))
-
-async def interactiveRun(pool):
+async def interactiveRun(pool, votebot = None):
     while True:
         command = await asyncInput("Enter command (or 'exit' to quit): ")
         command = command.strip().lower()
         if command == "exit":
             print("Exiting...")
             pool.timeEvents.stop()
+            if votebot:
+                await votebot.stop()
             break
         elif command == "help":
             print("Available commands: add person, remove person, list people, create poll, vote poll, unvote poll, vote person, unvote person, help, exit")
@@ -136,6 +116,3 @@ async def interactiveRun(pool):
                 print(f"{personId} removed their representative vote in context {contextPath}")
             else:
                 print(f"Failed to remove representative vote in context {contextPath}")
-
-if __name__ == "__main__":
-    asyncio.run(run())
